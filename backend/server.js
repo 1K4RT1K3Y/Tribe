@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/database.js';
+import authRoutes from './routes/authRoutes.js';
 
 dotenv.config();
 
@@ -23,8 +24,8 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes (will be added in next phases)
-// app.use('/api/auth', authRoutes);
+// API Routes
+app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
 // app.use('/api/posts', postRoutes);
 // app.use('/api/messages', messageRoutes);

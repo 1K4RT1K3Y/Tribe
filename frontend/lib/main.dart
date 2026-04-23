@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const VibeApp());
@@ -17,26 +17,7 @@ class VibeApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      home: const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.favorite, size: 80, color: Colors.pink),
-              SizedBox(height: 20),
-              Text(
-                'Vibe',
-                style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
-              ),
-              Text('Social Media & Matching App'),
-              SizedBox(height: 20),
-              Text('✅ Backend: Setup Complete'),
-              Text('✅ Frontend: Setup Complete'),
-              Text('⏳ Phase 2: Authentication incoming...'),
-            ],
-          ),
-        ),
-      ),
+      home: const LoginScreen(),
     );
   }
 }
