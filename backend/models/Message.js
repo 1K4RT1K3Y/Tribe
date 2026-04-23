@@ -6,34 +6,35 @@ const messageSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  recipientId: {
+  receiverId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
   },
-  text: {
+  content: {
     type: String,
-    required: [true, 'Message text is required'],
+    required: [true, 'Message content is required'],
     maxlength: 1000,
   },
-  image: {
+  messageType: {
     type: String,
-    default: null,
+    enum: ['text', 'image', 'system'],
+    default: 'text',
   },
-  read: {
+  isRead: {
     type: Boolean,
     default: false,
   },
   createdAt: {
     type: Date,
     default: Date.now,
-    index: -1, // For sorting by most recent
+    index: true,
   },
 });
 
-// Index for efficient queries
-messageSchema.index({ senderId: 1, recipientId: 1 });
-messageSchema.index({ recipientId: 1, read: 1 });
+// Compound index for efficient chat history queries
+messageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+messageSchema.index({ receiverId: 1, senderId: 1, createdAt: -1 });
 
 const Message = mongoose.model('Message', messageSchema);
 export default Message;

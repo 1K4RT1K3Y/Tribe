@@ -5,13 +5,9 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import postRoutes from './routes/postRoutes.js';
-<<<<<<< HEAD
-import matchRoutes from './routes/matchRoutes.js';
-=======
 import matchingRoutes from './routes/matchingRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
->>>>>>> b364c29e988e73a6aabad50ec66c48364b8bb0a5
 
 dotenv.config();
 
@@ -37,15 +33,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/posts', postRoutes);
-<<<<<<< HEAD
-app.use('/api/matches', matchRoutes);
-// app.use('/api/messages', messageRoutes);
-// app.use('/api/notifications', notificationRoutes);
-=======
 app.use('/api/matching', matchingRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
->>>>>>> b364c29e988e73a6aabad50ec66c48364b8bb0a5
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

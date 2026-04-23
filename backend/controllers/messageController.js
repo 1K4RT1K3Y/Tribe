@@ -1,31 +1,31 @@
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 
-// Send Message
+// Send a message
 export const sendMessage = async (req, res) => {
   try {
-    const { recipientId, text, image } = req.body;
-    const senderId = req.userId;
+    const { receiverId, content, messageType = 'text' } = req.body;
+    const senderId = req.user.id;
 
-    // Validation
-    if (!recipientId || !text) {
+    // Validate input
+    if (!receiverId || !content) {
       return res.status(400).json({
         success: false,
-        message: 'Recipient ID and message text are required',
+        message: 'Receiver ID and message content are required',
       });
     }
 
-    // Check if recipient exists
-    const recipient = await User.findById(recipientId);
-    if (!recipient) {
+    // Check if receiver exists
+    const receiver = await User.findById(receiverId);
+    if (!receiver) {
       return res.status(404).json({
         success: false,
-        message: 'Recipient not found',
+        message: 'Receiver not found',
       });
     }
 
     // Prevent sending message to self
-    if (senderId.toString() === recipientId) {
+    if (senderId.toString() === receiverId) {
       return res.status(400).json({
         success: false,
         message: 'Cannot send message to yourself',
@@ -35,14 +35,16 @@ export const sendMessage = async (req, res) => {
     // Create message
     const message = new Message({
       senderId,
-      recipientId,
-      text,
-      image: image || null,
+      receiverId,
+      content,
+      messageType,
     });
 
     await message.save();
-    await message.populate('senderId', 'name email');
-    await message.populate('recipientId', 'name email');
+
+    // Populate sender and receiver info
+    await message.populate('senderId', 'username profilePicture');
+    await message.populate('receiverId', 'username profilePicture');
 
     res.status(201).json({
       success: true,
@@ -50,6 +52,7 @@ export const sendMessage = async (req, res) => {
       data: message,
     });
   } catch (error) {
+    console.error('Send message error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to send message',
@@ -58,69 +61,94 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-// Get Chat History (between two users)
+// Get chat history between two users
 export const getChatHistory = async (req, res) => {
   try {
     const { userId: otherUserId } = req.params;
-    const currentUserId = req.userId;
+    const currentUserId = req.user.id;
     const { page = 1, limit = 50 } = req.query;
     const skip = (page - 1) * limit;
+
+    // Validate other user exists
+    const otherUser = await User.findById(otherUserId);
+    if (!otherUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
 
     // Get messages between two users
     const messages = await Message.find({
       $or: [
-        { senderId: currentUserId, recipientId: otherUserId },
-        { senderId: otherUserId, recipientId: currentUserId },
+        { senderId: currentUserId, receiverId: otherUserId },
+        { senderId: otherUserId, receiverId: currentUserId },
       ],
     })
-      .populate('senderId', 'name email')
-      .populate('recipientId', 'name email')
+      .populate('senderId', 'username profilePicture')
+      .populate('receiverId', 'username profilePicture')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    // Mark messages as read (if recipient is current user)
+    // Mark messages as read (messages received by current user)
     await Message.updateMany(
-      { senderId: otherUserId, recipientId: currentUserId, read: false },
-      { read: true }
+      {
+        senderId: otherUserId,
+        receiverId: currentUserId,
+        isRead: false,
+      },
+      { isRead: true }
     );
 
     const total = await Message.countDocuments({
       $or: [
-        { senderId: currentUserId, recipientId: otherUserId },
-        { senderId: otherUserId, recipientId: currentUserId },
+        { senderId: currentUserId, receiverId: otherUserId },
+        { senderId: otherUserId, receiverId: currentUserId },
       ],
     });
 
     res.status(200).json({
       success: true,
-      messages: messages.reverse(), // Show oldest first
-      pagination: {
-        current: page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
+      message: 'Chat history retrieved successfully',
+      data: {
+        messages: messages.reverse(), // Show oldest first for chat flow
+        pagination: {
+          current: parseInt(page),
+          limit: parseInt(limit),
+          total,
+          pages: Math.ceil(total / limit),
+        },
+        otherUser: {
+          id: otherUser._id,
+          username: otherUser.username,
+          profilePicture: otherUser.profilePicture,
+        },
       },
     });
   } catch (error) {
+    console.error('Get chat history error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch chat history',
+      message: 'Failed to get chat history',
       error: error.message,
     });
   }
 };
 
-// Get Conversations List (all chats for current user)
-export const getConversations = async (req, res) => {
+// Get user's chat list (recent conversations)
+export const getChatList = async (req, res) => {
   try {
-    const userId = req.userId;
+    const currentUserId = req.user.id;
 
-    // Get all unique conversations
+    // Get the most recent message for each conversation
     const conversations = await Message.aggregate([
       {
         $match: {
-          $or: [{ senderId: userId }, { recipientId: userId }],
+          $or: [
+            { senderId: mongoose.Types.ObjectId(currentUserId) },
+            { receiverId: mongoose.Types.ObjectId(currentUserId) },
+          ],
         },
       },
       {
@@ -129,21 +157,20 @@ export const getConversations = async (req, res) => {
       {
         $group: {
           _id: {
-            $cond: [
-              { $eq: ['$senderId', userId] },
-              '$recipientId',
-              '$senderId',
-            ],
+            $cond: {
+              if: { $eq: ['$senderId', mongoose.Types.ObjectId(currentUserId)] },
+              then: '$receiverId',
+              else: '$senderId',
+            },
           },
-          lastMessage: { $first: '$text' },
-          lastMessageTime: { $first: '$createdAt' },
+          lastMessage: { $first: '$$ROOT' },
           unreadCount: {
             $sum: {
               $cond: [
                 {
                   $and: [
-                    { $eq: ['$recipientId', userId] },
-                    { $eq: ['$read', false] },
+                    { $eq: ['$receiverId', mongoose.Types.ObjectId(currentUserId)] },
+                    { $eq: ['$isRead', false] },
                   ],
                 },
                 1,
@@ -158,69 +185,110 @@ export const getConversations = async (req, res) => {
           from: 'users',
           localField: '_id',
           foreignField: '_id',
-          as: 'userDetails',
+          as: 'user',
         },
       },
       {
-        $unwind: '$userDetails',
-      },
-      {
-        $sort: { lastMessageTime: -1 },
+        $unwind: '$user',
       },
       {
         $project: {
+          _id: 0,
           userId: '$_id',
-          userName: '$userDetails.name',
-          userEmail: '$userDetails.email',
-          lastMessage: 1,
-          lastMessageTime: 1,
+          username: '$user.username',
+          profilePicture: '$user.profilePicture',
+          lastMessage: {
+            id: '$lastMessage._id',
+            content: '$lastMessage.content',
+            messageType: '$lastMessage.messageType',
+            createdAt: '$lastMessage.createdAt',
+            isRead: '$lastMessage.isRead',
+          },
           unreadCount: 1,
         },
+      },
+      {
+        $sort: { 'lastMessage.createdAt': -1 },
       },
     ]);
 
     res.status(200).json({
       success: true,
-      conversations,
-      totalConversations: conversations.length,
+      message: 'Chat list retrieved successfully',
+      data: conversations,
     });
   } catch (error) {
+    console.error('Get chat list error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch conversations',
+      message: 'Failed to get chat list',
       error: error.message,
     });
   }
 };
 
-// Get Unread Messages Count
+// Get unread messages count
 export const getUnreadCount = async (req, res) => {
   try {
-    const userId = req.userId;
+    const currentUserId = req.user.id;
 
     const unreadCount = await Message.countDocuments({
-      recipientId: userId,
-      read: false,
+      receiverId: currentUserId,
+      isRead: false,
     });
 
     res.status(200).json({
       success: true,
-      unreadCount,
+      message: 'Unread count retrieved successfully',
+      data: { unreadCount },
     });
   } catch (error) {
+    console.error('Get unread count error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch unread count',
+      message: 'Failed to get unread count',
       error: error.message,
     });
   }
 };
 
-// Delete Message (only sender can delete)
+// Mark messages as read
+export const markMessagesAsRead = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user.id;
+
+    const result = await Message.updateMany(
+      {
+        senderId: userId,
+        receiverId: currentUserId,
+        isRead: false,
+      },
+      { isRead: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Messages marked as read',
+      data: {
+        modifiedCount: result.modifiedCount,
+      },
+    });
+  } catch (error) {
+    console.error('Mark messages as read error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark messages as read',
+      error: error.message,
+    });
+  }
+};
+
+// Delete message (only sender can delete)
 export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
-    const userId = req.userId;
+    const currentUserId = req.user.id;
 
     const message = await Message.findById(messageId);
 
@@ -231,8 +299,8 @@ export const deleteMessage = async (req, res) => {
       });
     }
 
-    // Check authorization
-    if (message.senderId.toString() !== userId) {
+    // Check authorization (only sender can delete)
+    if (message.senderId.toString() !== currentUserId) {
       return res.status(403).json({
         success: false,
         message: 'You can only delete your own messages',
@@ -246,6 +314,7 @@ export const deleteMessage = async (req, res) => {
       message: 'Message deleted successfully',
     });
   } catch (error) {
+    console.error('Delete message error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to delete message',
