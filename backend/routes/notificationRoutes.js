@@ -11,12 +11,25 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Protected routes
-router.get('/', authMiddleware, getNotifications);
-router.get('/unread/count', authMiddleware, getUnreadNotificationsCount);
-router.put('/:notificationId/read', authMiddleware, markAsRead);
-router.put('/read/all', authMiddleware, markAllAsRead);
-router.delete('/:notificationId', authMiddleware, deleteNotification);
-router.delete('/all', authMiddleware, deleteAllNotifications);
+// All routes require authentication
+router.use(authMiddleware);
+
+// Get notifications with optional filtering
+router.get('/', getNotifications);
+
+// Get unread notifications count
+router.get('/unread/count', getUnreadNotificationsCount);
+
+// Mark specific notification as read
+router.put('/:notificationId/read', markAsRead);
+
+// Mark all notifications as read
+router.put('/read/all', markAllAsRead);
+
+// Delete specific notification
+router.delete('/:notificationId', deleteNotification);
+
+// Delete all notifications
+router.delete('/all', deleteAllNotifications);
 
 export default router;

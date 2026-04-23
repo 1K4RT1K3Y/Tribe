@@ -1,5 +1,6 @@
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import { createNotification } from './notificationController.js';
 
 // Send a message
 export const sendMessage = async (req, res) => {
@@ -45,6 +46,16 @@ export const sendMessage = async (req, res) => {
     // Populate sender and receiver info
     await message.populate('senderId', 'username profilePicture');
     await message.populate('receiverId', 'username profilePicture');
+
+    // Create notification for receiver
+    await createNotification(
+      receiver._id,
+      'message',
+      'New Message',
+      `You have a new message from ${message.senderId.username}`,
+      message._id,
+      'message'
+    );
 
     res.status(201).json({
       success: true,

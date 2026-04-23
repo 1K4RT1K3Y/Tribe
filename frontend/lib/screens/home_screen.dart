@@ -4,6 +4,7 @@ import 'package:vibe/providers/auth_provider.dart';
 import 'package:vibe/screens/feed_screen.dart';
 import 'package:vibe/screens/match_suggestions_screen.dart';
 import 'package:vibe/screens/chat_list_screen.dart';
+import 'package:vibe/screens/notifications_screen.dart';
 import 'package:vibe/screens/profile_view_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
     FeedScreen(),
     MatchSuggestionsScreen(),
     ChatListScreen(),
+    NotificationsScreen(),
     ProfileViewScreen(),
   ];
 
@@ -48,6 +50,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.message),
             label: 'Messages',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
