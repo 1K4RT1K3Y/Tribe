@@ -5,6 +5,7 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import postRoutes from './routes/postRoutes.js';
+import matchRoutes from './routes/matchRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/matches', matchRoutes);
 // app.use('/api/messages', messageRoutes);
 // app.use('/api/notifications', notificationRoutes);
 
