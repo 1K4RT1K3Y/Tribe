@@ -24,16 +24,21 @@ class Notification {
   });
 
   factory Notification.fromJson(Map<String, dynamic> json) {
+    final userIdData = json['userId'];
+    final userId = userIdData is Map
+        ? (userIdData['_id'] ?? userIdData['id'] ?? '')
+        : (userIdData as String? ?? '');
+
     return Notification(
-      id: json['_id'] ?? json['id'],
-      userId: json['userId'],
-      type: json['type'],
-      title: json['title'],
-      message: json['message'],
-      relatedId: json['relatedId'],
-      relatedType: json['relatedType'],
-      isRead: json['isRead'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['_id'] ?? json['id'] as String? ?? '',
+      userId: userId,
+      type: json['type'] as String? ?? 'system',
+      title: json['title'] as String? ?? '',
+      message: json['message'] as String? ?? '',
+      relatedId: json['relatedId'] as String?,
+      relatedType: json['relatedType'] as String?,
+      isRead: json['isRead'] as bool? ?? false,
+      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
     );
   }
 
