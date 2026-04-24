@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:vibe/models/message_model.dart';
-import 'package:vibe/models/user_model.dart';
-import 'package:vibe/services/auth_service.dart';
+import 'package:tribe/models/message_model.dart';
+import 'package:tribe/models/user_model.dart';
+import 'package:tribe/services/auth_service.dart';
 
 class MessageService {
   static const String baseUrl = 'http://localhost:5000/api/messages';

@@ -6,8 +6,8 @@ class Message {
   final String messageType;
   final bool isRead;
   final DateTime createdAt;
-  final User? sender;
-  final User? receiver;
+  final MessageUser? sender;
+  final MessageUser? receiver;
 
   Message({
     required this.id,
@@ -22,20 +22,24 @@ class Message {
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
+    // Extract senderId - handle both string and object formats
+    final senderIdData = json['senderId'];
+    final senderId = senderIdData is Map ? (senderIdData['_id'] ?? senderIdData['id'] ?? '') : (senderIdData as String? ?? '');
+    
+    // Extract receiverId - handle both string and object formats
+    final receiverIdData = json['receiverId'];
+    final receiverId = receiverIdData is Map ? (receiverIdData['_id'] ?? receiverIdData['id'] ?? '') : (receiverIdData as String? ?? '');
+
     return Message(
-      id: json['_id'] ?? json['id'],
-      senderId: json['senderId'],
-      receiverId: json['receiverId'],
-      content: json['content'],
-      messageType: json['messageType'] ?? 'text',
-      isRead: json['isRead'] ?? false,
-      createdAt: DateTime.parse(json['createdAt']),
-      sender: json['senderId'] != null && json['senderId'] is Map
-          ? User.fromJson(json['senderId'])
-          : null,
-      receiver: json['receiverId'] != null && json['receiverId'] is Map
-          ? User.fromJson(json['receiverId'])
-          : null,
+      id: json['_id'] ?? json['id'] as String? ?? '',
+      senderId: senderId,
+      receiverId: receiverId,
+      content: json['content'] as String? ?? '',
+      messageType: json['messageType'] as String? ?? 'text',
+      isRead: json['isRead'] as bool? ?? false,
+      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+      sender: senderIdData is Map ? MessageUser.fromJson(senderIdData) : null,
+      receiver: receiverIdData is Map ? MessageUser.fromJson(receiverIdData) : null,
     );
   }
 
@@ -48,8 +52,8 @@ class Message {
       'messageType': messageType,
       'isRead': isRead,
       'createdAt': createdAt.toIso8601String(),
-      'senderId': sender?.toJson(),
-      'receiverId': receiver?.toJson(),
+      'sender': sender?.toJson(),
+      'receiver': receiver?.toJson(),
     };
   }
 
@@ -61,8 +65,8 @@ class Message {
     String? messageType,
     bool? isRead,
     DateTime? createdAt,
-    User? sender,
-    User? receiver,
+    MessageUser? sender,
+    MessageUser? receiver,
   }) {
     return Message(
       id: id ?? this.id,
@@ -93,19 +97,19 @@ class Message {
 }
 
 // Import User model for references
-class User {
+class MessageUser {
   final String id;
   final String username;
   final String? profilePicture;
 
-  User({
+  MessageUser({
     required this.id,
     required this.username,
     this.profilePicture,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
+  factory MessageUser.fromJson(Map<String, dynamic> json) {
+    return MessageUser(
       id: json['_id'] ?? json['id'],
       username: json['username'],
       profilePicture: json['profilePicture'],

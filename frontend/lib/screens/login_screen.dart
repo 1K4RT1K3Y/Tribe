@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
 
@@ -30,12 +31,12 @@ class _LoginScreenState extends State<LoginScreen> {
               const Icon(Icons.favorite, size: 100, color: Colors.pink),
               const SizedBox(height: 30),
               const Text(
-                'Welcome to Vibe',
+                'Welcome to Tribe',
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               const Text(
-                'Find your people, share your vibe',
+                'Find your people, share your story',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 50),
@@ -149,10 +150,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
 
-      final result = await AuthService.login(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
+      final result = await context.read<AuthProvider>().login(
+            _emailController.text,
+            _passwordController.text,
+          );
 
       setState(() => _isLoading = false);
 

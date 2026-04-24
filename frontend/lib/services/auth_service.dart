@@ -144,8 +144,7 @@ class AuthService {
     return prefs.getString(tokenKey);
   }
 
-  static Future<bool> isLoggedIn() async {
-    final token = await _getToken();
-    return token != null;
+  static Future<String?> getToken() async {
+    return await _getToken();
   }
 }

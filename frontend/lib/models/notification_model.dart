@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Notification {
   final String id;
   final String userId;
@@ -116,6 +118,3 @@ class Notification {
     return difference.inHours < 1;
   }
 }
-
-// Import for IconData and Color
-import 'package:flutter/material.dart';

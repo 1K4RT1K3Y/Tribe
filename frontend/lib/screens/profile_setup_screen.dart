@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/profile_service.dart';
-import '../models/profile_model.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   final String userId;
@@ -75,10 +74,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _bioController,
+                  maxLines: 4,
                   decoration: InputDecoration(
                     hintText: 'Tell us about yourself...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    maxLines: 4,
                   ),
                   validator: (value) {
                     if (value?.isEmpty ?? true) {

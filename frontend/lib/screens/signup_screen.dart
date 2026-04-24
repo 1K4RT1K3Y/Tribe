@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const Icon(Icons.favorite, size: 80, color: Colors.pink),
               const SizedBox(height: 20),
               const Text(
-                'Create Your Vibe',
+                'Join Tribe',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 40),
@@ -184,12 +185,12 @@ class _SignupScreenState extends State<SignupScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
 
-      final result = await AuthService.register(
-        name: _nameController.text,
-        email: _emailController.text,
-        password: _passwordController.text,
-        confirmPassword: _confirmPasswordController.text,
-      );
+      final result = await context.read<AuthProvider>().register(
+            _nameController.text,
+            _emailController.text,
+            _passwordController.text,
+            _confirmPasswordController.text,
+          );
 
       setState(() => _isLoading = false);
 

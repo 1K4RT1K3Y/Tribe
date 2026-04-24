@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/post_service.dart';
 import '../models/post_model.dart';
+import 'create_post_screen.dart';
 
 class FeedScreen extends StatefulWidget {
-  const FeedScreen({Key? key}) : super(key: key);
+  const FeedScreen({super.key});
 
   @override
   State<FeedScreen> createState() => _FeedScreenState();
@@ -41,7 +42,7 @@ class _FeedScreenState extends State<FeedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vibe Feed'),
+        title: const Text('Tribe Feed'),
         elevation: 0,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -196,7 +197,7 @@ class _PostCardState extends State<PostCard> {
           ),
 
           // Action buttons
-          Divider(height: 1),
+          const Divider(height: 1),
           Padding(
             padding: const EdgeInsets.all(8),
             child: Row(

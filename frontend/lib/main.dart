@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'providers/auth_provider.dart';
 import 'screens/login_screen.dart';
 
 void main() {
-  runApp(const VibeApp());
+  runApp(const TribeApp());
 }
 
-class VibeApp extends StatelessWidget {
-  const VibeApp({Key? key}) : super(key: key);
+class TribeApp extends StatelessWidget {
+  const TribeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Vibe',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
+    return ChangeNotifierProvider(
+      create: (_) => AuthProvider(),
+      child: MaterialApp(
+        title: 'Tribe',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+        ),
+        debugShowCheckedModeBanner: false,
+        home: const LoginScreen(),
       ),
-      debugShowCheckedModeBanner: false,
-      home: const LoginScreen(),
     );
   }
 }

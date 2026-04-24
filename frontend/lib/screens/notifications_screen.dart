@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:vibe/models/notification_model.dart';
-import 'package:vibe/services/notification_service.dart';
+import 'package:tribe/models/notification_model.dart' as notification_model;
+import 'package:tribe/services/notification_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -10,7 +10,7 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  List<Notification> _notifications = [];
+  List<notification_model.Notification> _notifications = [];
   bool _isLoading = true;
   bool _isLoadingMore = false;
   String? _error;
@@ -44,7 +44,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         limit: _limit,
       );
 
-      final newNotifications = result['notifications'] as List<Notification>;
+      final newNotifications = result['notifications'] as List<notification_model.Notification>;
       final pagination = result['pagination'] as Map<String, dynamic>;
 
       setState(() {
@@ -76,7 +76,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       });
     } catch (e) {
       // Silently fail for unread count
-      print('Failed to load unread count: $e');
     }
   }
 
@@ -217,7 +216,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationItem(Notification notification) {
+  Widget _buildNotificationItem(notification_model.Notification notification) {
     return Dismissible(
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
@@ -287,7 +286,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  void _showNotificationDetails(Notification notification) {
+  void _showNotificationDetails(notification_model.Notification notification) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

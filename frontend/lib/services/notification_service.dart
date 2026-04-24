@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:vibe/models/notification_model.dart';
-import 'package:vibe/services/auth_service.dart';
+import '../models/notification_model.dart' as notification_model;
+import 'package:tribe/services/auth_service.dart';
 
 class NotificationService {
   static const String baseUrl = 'http://localhost:5000/api/notifications';
@@ -37,7 +37,7 @@ class NotificationService {
         final data = jsonDecode(response.body);
         return {
           'notifications': (data['data']['notifications'] as List)
-              .map((n) => Notification.fromJson(n))
+              .map((n) => notification_model.Notification.fromJson(n))
               .toList(),
           'pagination': data['data']['pagination'],
         };
@@ -76,7 +76,7 @@ class NotificationService {
   }
 
   // Mark notification as read
-  static Future<Notification> markAsRead(String notificationId) async {
+  static Future<notification_model.Notification> markAsRead(String notificationId) async {
     try {
       final token = await AuthService.getToken();
       if (token == null) throw Exception('Not authenticated');
@@ -90,7 +90,7 @@ class NotificationService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return Notification.fromJson(data['data']);
+        return notification_model.Notification.fromJson(data['data']);
       } else {
         final error = jsonDecode(response.body);
         throw Exception(error['message'] ?? 'Failed to mark as read');

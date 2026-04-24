@@ -14,10 +14,13 @@ class Comment {
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
+    final userIdData = json['userId'];
+    final userName = userIdData is Map ? (userIdData['name'] as String? ?? 'Unknown') : 'Unknown';
+
     return Comment(
       id: json['_id'],
-      userId: json['userId'],
-      userName: json['userId'] is Map ? json['userId']['name'] : 'Unknown',
+      userId: userIdData is Map ? (userIdData['_id'] ?? userIdData['id'] ?? '') : (userIdData as String? ?? ''),
+      userName: userName,
       text: json['text'],
       createdAt: DateTime.parse(json['createdAt']),
     );
@@ -51,19 +54,37 @@ class Post {
   int get commentsCount => comments.length;
 
   factory Post.fromJson(Map<String, dynamic> json) {
+    final userIdData = json['userId'];
+    final userId = userIdData is Map ? userIdData['_id'] ?? userIdData['id'] ?? '' : (userIdData as String? ?? '');
+    final userName = userIdData is Map ? (userIdData['name'] as String? ?? 'Unknown') : 'Unknown';
+
+    // Safely extract likes - handle both string IDs and objects
+    List<String> likes = [];
+    if (json['likes'] is List) {
+      likes = (json['likes'] as List)
+          .map((like) {
+            if (like is String) return like;
+            if (like is Map) return (like['_id'] ?? like['id'] ?? '') as String;
+            return '';
+          })
+          .where((id) => id.isNotEmpty)
+          .cast<String>()
+          .toList();
+    }
+
     return Post(
       id: json['_id'],
-      userId: json['userId'],
-      userName: json['userId'] is Map ? json['userId']['name'] : 'Unknown',
-      content: json['content'],
-      image: json['image'],
-      likes: List<String>.from(json['likes'] ?? []),
+      userId: userId,
+      userName: userName,
+      content: json['content'] as String? ?? '',
+      image: json['image'] as String?,
+      likes: likes,
       comments: (json['comments'] as List?)
-              ?.map((c) => Comment.fromJson(c))
+              ?.map((c) => Comment.fromJson(c as Map<String, dynamic>))
               .toList() ??
           [],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(json['updatedAt'] as String? ?? DateTime.now().toIso8601String()),
     );
   }
 

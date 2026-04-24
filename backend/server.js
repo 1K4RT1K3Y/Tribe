@@ -24,7 +24,7 @@ connectDB();
 // Health Check Route
 app.get('/api/health', (req, res) => {
   res.status(200).json({
-    message: '✅ Vibe Backend is Running',
+    message: '✅ Tribe Backend is Running',
     timestamp: new Date().toISOString(),
   });
 });
@@ -52,6 +52,6 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Vibe Backend Server running on http://localhost:${PORT}`);
+  console.log(`\n🚀 Tribe Backend Server running on http://localhost:${PORT}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV}\n`);
 });

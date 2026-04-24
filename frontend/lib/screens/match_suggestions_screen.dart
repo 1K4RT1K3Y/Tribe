@@ -51,7 +51,7 @@ class _MatchSuggestionsScreenState extends State<MatchSuggestionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vibe Matches'),
+        title: const Text('Discover'),
         elevation: 0,
       ),
       body: FutureBuilder<Map<String, dynamic>>(

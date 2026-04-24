@@ -1,7 +1,7 @@
 {
-  "name": "vibe-backend",
+  "name": "tribe-backend",
   "version": "1.0.0",
-  "description": "Vibe - Social Media & Interest-based Matching Backend",
+  "description": "Tribe - Social Networking Backend",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["social", "matching", "api"],
-  "author": "Vibe Team",
+  "author": "Tribe Team",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",

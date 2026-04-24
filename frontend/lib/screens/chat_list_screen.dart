@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:vibe/models/message_model.dart';
-import 'package:vibe/providers/auth_provider.dart';
-import 'package:vibe/screens/chat_screen.dart';
-import 'package:vibe/services/message_service.dart';
+import 'package:tribe/screens/chat_screen.dart';
+import 'package:tribe/services/message_service.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});

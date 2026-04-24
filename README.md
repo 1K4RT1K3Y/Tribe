@@ -1,7 +1,7 @@
-# 🎯 Vibe - Social Media & Interest-based Matching App
+# 🎯 Tribe - Social Networking App
 
 ## Project Overview
-Vibe is a full-stack social media application with intelligent interest-based matching. Users can connect based on shared interests, post updates, chat, and discover new matches through our sophisticated compatibility algorithm.
+Tribe is a full-stack social networking application for sharing updates, connecting with people, chatting, and building your community.
 
 ## 📋 Technology Stack
 - **Frontend**: Flutter (Dart) with Provider for state management

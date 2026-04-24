@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:vibe/models/message_model.dart';
-import 'package:vibe/providers/auth_provider.dart';
-import 'package:vibe/services/message_service.dart';
+import 'package:tribe/models/message_model.dart';
+import 'package:tribe/providers/auth_provider.dart';
+import 'package:tribe/services/message_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String userId;
@@ -27,7 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = true;
   bool _isSending = false;
   String? _error;
-  User? _otherUser;
+
 
   @override
   void initState() {
@@ -51,11 +51,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       final chatData = await MessageService.getChatHistory(widget.userId);
       final messages = chatData['messages'] as List<Message>;
-      final otherUser = chatData['otherUser'] as User;
 
       setState(() {
         _messages = messages;
-        _otherUser = otherUser;
         _isLoading = false;
       });
 
