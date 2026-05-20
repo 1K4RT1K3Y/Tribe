@@ -12,7 +12,7 @@ const calculateMatchScore = (userInterests, profileInterests) => {
   return commonInterests.length;
 };
 
-// Get Suggested Users (Matching)
+// Get Suggested Users (Matching - 4+ common interests)
 export const getSuggestedUsers = async (req, res) => {
   try {
     const userId = req.userId;
@@ -47,6 +47,8 @@ export const getSuggestedUsers = async (req, res) => {
           hobbies: profile.hobbies,
           age: profile.age,
           location: profile.location,
+          occupation: profile.occupation,
+          gender: profile.gender,
           profileImage: profile.profileImage,
           matchScore,
           commonInterests: userProfile.interests.filter(interest =>
@@ -54,9 +56,9 @@ export const getSuggestedUsers = async (req, res) => {
           ),
         };
       })
-      .filter(user => user.matchScore > 0) // Only show users with at least 1 common interest
+      .filter(user => user.matchScore >= 4) // Only show users with 4+ common interests
       .sort((a, b) => b.matchScore - a.matchScore) // Sort by match score (highest first)
-      .slice(0, 10); // Return top 10 suggestions
+      .slice(0, 20); // Return top 20 suggestions
 
     res.status(200).json({
       success: true,
@@ -148,3 +150,82 @@ export const getAllUsersWithMatchScores = async (req, res) => {
     });
   }
 };
+
+// Search Users by name or interests
+export const searchUsers = async (req, res) => {
+  try {
+    const { query } = req.query;
+    const userId = req.userId;
+
+    if (!query || query.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Search query is required',
+      });
+    }
+
+    // Get current user's profile for match calculation
+    const userProfile = await Profile.findOne({ userId }).populate('userId', 'name email');
+
+    // Search users by name
+    const users = await User.find({
+      _id: { $ne: userId },
+      name: { $regex: query, $options: 'i' }, // Case-insensitive search
+    });
+
+    // Also search by interests
+    const profilesByInterest = await Profile.find({
+      userId: { $ne: userId },
+      interests: { $regex: query, $options: 'i' },
+    }).populate('userId', 'name email');
+
+    const usersByInterest = profilesByInterest.map(p => p.userId);
+
+    // Combine and deduplicate
+    const allUserIds = new Set([...users.map(u => u._id), ...usersByInterest.map(u => u._id)]);
+
+    // Get profiles for all found users
+    const searchResults = [];
+    for (const uid of allUserIds) {
+      const profile = await Profile.findOne({ userId: uid }).populate('userId', 'name email');
+      const matchScore = userProfile
+        ? calculateMatchScore(userProfile.interests, profile.interests)
+        : 0;
+
+      searchResults.push({
+        userId: profile.userId._id,
+        userName: profile.userId.name,
+        userEmail: profile.userId.email,
+        bio: profile.bio,
+        interests: profile.interests,
+        hobbies: profile.hobbies,
+        age: profile.age,
+        location: profile.location,
+        occupation: profile.occupation,
+        gender: profile.gender,
+        profileImage: profile.profileImage,
+        matchScore,
+        commonInterests: userProfile
+          ? userProfile.interests.filter(interest => profile.interests.includes(interest))
+          : [],
+      });
+    }
+
+    // Sort by match score
+    searchResults.sort((a, b) => b.matchScore - a.matchScore);
+
+    res.status(200).json({
+      success: true,
+      message: 'Search results retrieved successfully',
+      results: searchResults,
+      totalResults: searchResults.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to search users',
+      error: error.message,
+    });
+  }
+};
+

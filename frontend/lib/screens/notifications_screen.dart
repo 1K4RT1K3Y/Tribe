@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tribe/models/notification_model.dart' as notification_model;
-import 'package:tribe/services/notification_service.dart';
+import '../services/connection_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -9,132 +8,93 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
-  List<notification_model.Notification> _notifications = [];
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
+class _NotificationsScreenState extends State<NotificationsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  List<dynamic> _connectionRequests = [];
+  bool _isLoadingRequests = true;
+  bool _isProcessing = false;
   String? _error;
-  int _currentPage = 1;
-  final int _limit = 20;
-  bool _hasMorePages = true;
-  int _unreadCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadNotifications();
-    _loadUnreadCount();
+    _tabController = TabController(length: 1, vsync: this);
+    _loadConnectionRequests();
   }
 
-  Future<void> _loadNotifications({bool loadMore = false}) async {
-    try {
-      if (loadMore) {
-        setState(() {
-          _isLoadingMore = true;
-        });
-      } else {
-        setState(() {
-          _isLoading = true;
+  Future<void> _loadConnectionRequests() async {
+    setState(() {
+      _isLoadingRequests = true;
+      _error = null;
+    });
+
+    final result = await ConnectionService.getPendingRequests();
+
+    if (mounted) {
+      setState(() {
+        if (result['success']) {
+          _connectionRequests = result['requests'] ?? [];
           _error = null;
-        });
-      }
-
-      final result = await NotificationService.getNotifications(
-        page: loadMore ? _currentPage + 1 : 1,
-        limit: _limit,
-      );
-
-      final newNotifications = result['notifications'] as List<notification_model.Notification>;
-      final pagination = result['pagination'] as Map<String, dynamic>;
-
-      setState(() {
-        if (loadMore) {
-          _notifications.addAll(newNotifications);
-          _currentPage++;
         } else {
-          _notifications = newNotifications;
-          _currentPage = 1;
+          _error = result['message'] ?? 'Failed to load requests';
+          _connectionRequests = [];
         }
-        _hasMorePages = pagination['current'] * pagination['limit'] < pagination['total'];
-        _isLoading = false;
-        _isLoadingMore = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-        _isLoadingMore = false;
+        _isLoadingRequests = false;
       });
     }
   }
 
-  Future<void> _loadUnreadCount() async {
-    try {
-      final count = await NotificationService.getUnreadCount();
+  Future<void> _acceptRequest(String requestId, int index) async {
+    setState(() => _isProcessing = true);
+
+    final result = await ConnectionService.acceptConnectionRequest(requestId);
+
+    setState(() => _isProcessing = false);
+
+    if (result['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connection accepted!'),
+          backgroundColor: Colors.green,
+        ),
+      );
       setState(() {
-        _unreadCount = count;
+        _connectionRequests.removeAt(index);
       });
-    } catch (e) {
-      // Silently fail for unread count
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  Future<void> _markAsRead(String notificationId) async {
-    try {
-      await NotificationService.markAsRead(notificationId);
+  Future<void> _rejectRequest(String requestId, int index) async {
+    setState(() => _isProcessing = true);
 
+    final result = await ConnectionService.rejectConnectionRequest(requestId);
+
+    setState(() => _isProcessing = false);
+
+    if (result['success']) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connection declined'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       setState(() {
-        final index = _notifications.indexWhere((n) => n.id == notificationId);
-        if (index != -1) {
-          _notifications[index] = _notifications[index].copyWith(isRead: true);
-          _unreadCount = _unreadCount > 0 ? _unreadCount - 1 : 0;
-        }
+        _connectionRequests.removeAt(index);
       });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to mark as read: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _markAllAsRead() async {
-    try {
-      final modifiedCount = await NotificationService.markAllAsRead();
-
-      setState(() {
-        _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
-        _unreadCount = 0;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Marked $modifiedCount notifications as read')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to mark all as read: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteNotification(String notificationId) async {
-    try {
-      await NotificationService.deleteNotification(notificationId);
-
-      setState(() {
-        _notifications.removeWhere((n) => n.id == notificationId);
-      });
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete notification: $e')),
-        );
-      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -143,192 +103,216 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Notifications'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
-          if (_unreadCount > 0)
-            TextButton(
-              onPressed: _markAllAsRead,
-              child: const Text(
-                'Mark All Read',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => _loadNotifications(),
+            onPressed: _loadConnectionRequests,
           ),
         ],
       ),
-      body: _isLoading
+      body: _isLoadingRequests
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'Error: $_error',
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
+                      Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
                       const SizedBox(height: 16),
+                      Text(
+                        _error ?? 'Error loading notifications',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 20),
                       ElevatedButton(
-                        onPressed: () => _loadNotifications(),
+                        onPressed: _loadConnectionRequests,
                         child: const Text('Retry'),
                       ),
                     ],
                   ),
                 )
-              : _notifications.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No notifications yet.\nStart interacting to get notifications!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
+              : _connectionRequests.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.notifications_none,
+                              size: 80, color: Colors.grey[300]),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No pending connection requests',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'When someone sends you a connection request, it will appear here',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: () => _loadNotifications(),
+                      onRefresh: _loadConnectionRequests,
                       child: ListView.builder(
-                        itemCount: _notifications.length + (_hasMorePages ? 1 : 0),
+                        itemCount: _connectionRequests.length,
                         itemBuilder: (context, index) {
-                          if (index == _notifications.length) {
-                            // Load more indicator
-                            return Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Center(
-                                child: _isLoadingMore
-                                    ? const CircularProgressIndicator()
-                                    : ElevatedButton(
-                                        onPressed: () => _loadNotifications(loadMore: true),
-                                        child: const Text('Load More'),
-                                      ),
-                              ),
-                            );
-                          }
+                          final request = _connectionRequests[index];
+                          final senderProfile = request['senderProfile'];
+                          final sender = request['senderId'];
 
-                          final notification = _notifications[index];
-                          return _buildNotificationItem(notification);
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: Column(
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      // Avatar
+                                      CircleAvatar(
+                                        radius: 32,
+                                        backgroundImage: senderProfile?['profileImage'] != null
+                                            ? NetworkImage(senderProfile['profileImage'])
+                                            : null,
+                                        child: senderProfile?['profileImage'] == null
+                                            ? const Icon(Icons.person)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 16),
+                                      // User info
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              sender['name'] ?? 'Unknown',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (senderProfile?['occupation'] != null &&
+                                                senderProfile['occupation'].isNotEmpty)
+                                              Text(
+                                                senderProfile['occupation'],
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            if (senderProfile?['bio'] != null &&
+                                                senderProfile['bio'].isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 4),
+                                                child: Text(
+                                                  senderProfile['bio'],
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: Colors.grey[700],
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Common interests
+                                if (senderProfile?['interests'] != null &&
+                                    (senderProfile['interests'] as List).isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Interests',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: (senderProfile['interests'] as List)
+                                              .take(4)
+                                              .map((interest) => Chip(
+                                                    label: Text(
+                                                      interest,
+                                                      style: const TextStyle(fontSize: 11),
+                                                    ),
+                                                    backgroundColor: Colors.blue[100],
+                                                    padding: EdgeInsets.zero,
+                                                  ))
+                                              .toList(),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                // Action buttons
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: _isProcessing
+                                              ? null
+                                              : () => _rejectRequest(request['_id'], index),
+                                          style: OutlinedButton.styleFrom(
+                                            side: const BorderSide(color: Colors.red),
+                                          ),
+                                          child: const Text(
+                                            'Decline',
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          onPressed: _isProcessing
+                                              ? null
+                                              : () => _acceptRequest(request['_id'], index),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Colors.blue,
+                                          ),
+                                          child: const Text(
+                                            'Accept',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
                         },
                       ),
                     ),
     );
   }
 
-  Widget _buildNotificationItem(notification_model.Notification notification) {
-    return Dismissible(
-      key: Key(notification.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(
-          Icons.delete,
-          color: Colors.white,
-        ),
-      ),
-      onDismissed: (direction) {
-        _deleteNotification(notification.id);
-      },
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: notification.getColor(),
-          child: Icon(
-            notification.getIcon(),
-            color: Colors.white,
-          ),
-        ),
-        title: Text(
-          notification.title,
-          style: TextStyle(
-            fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              notification.message,
-              style: TextStyle(
-                color: notification.isRead ? Colors.grey : Colors.black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _formatTime(notification.createdAt),
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        trailing: notification.isRead
-            ? null
-            : Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.blue,
-                  shape: BoxShape.circle,
-                ),
-              ),
-        onTap: () {
-          if (!notification.isRead) {
-            _markAsRead(notification.id);
-          }
-          // TODO: Navigate to related content based on notification type
-          _showNotificationDetails(notification);
-        },
-      ),
-    );
-  }
-
-  void _showNotificationDetails(notification_model.Notification notification) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(notification.title),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(notification.message),
-            const SizedBox(height: 16),
-            Text(
-              'Type: ${notification.type}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            Text(
-              'Time: ${_formatTime(notification.createdAt)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 }

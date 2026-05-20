@@ -8,6 +8,7 @@ import postRoutes from './routes/postRoutes.js';
 import matchingRoutes from './routes/matchingRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import connectionRoutes from './routes/connectionRoutes.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/matching', matchingRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/connections', connectionRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

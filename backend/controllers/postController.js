@@ -7,16 +7,33 @@ export const createPost = async (req, res) => {
     const { content, image } = req.body;
     const userId = req.userId;
 
-    if (!content) {
+    // Validation
+    if (!content || typeof content !== 'string') {
       return res.status(400).json({
         success: false,
         message: 'Post content is required',
       });
     }
 
+    const trimmedContent = content.trim();
+    
+    if (trimmedContent.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Post content cannot be empty',
+      });
+    }
+
+    if (trimmedContent.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Post content cannot exceed 1000 characters',
+      });
+    }
+
     const post = new Post({
       userId,
-      content,
+      content: trimmedContent,
       image: image || null,
     });
 
@@ -159,7 +176,23 @@ export const updatePost = async (req, res) => {
       });
     }
 
-    if (content) post.content = content;
+    if (content) {
+      const trimmedContent = content.trim();
+      if (trimmedContent.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Post content cannot be empty',
+        });
+      }
+      if (trimmedContent.length > 1000) {
+        return res.status(400).json({
+          success: false,
+          message: 'Post content cannot exceed 1000 characters',
+        });
+      }
+      post.content = trimmedContent;
+    }
+    
     if (image !== undefined) post.image = image;
     post.updatedAt = new Date();
 
@@ -265,10 +298,27 @@ export const addComment = async (req, res) => {
     const { text } = req.body;
     const userId = req.userId;
 
-    if (!text) {
+    // Validation
+    if (!text || typeof text !== 'string') {
       return res.status(400).json({
         success: false,
         message: 'Comment text is required',
+      });
+    }
+
+    const trimmedText = text.trim();
+    
+    if (trimmedText.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comment cannot be empty',
+      });
+    }
+
+    if (trimmedText.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: 'Comment cannot exceed 500 characters',
       });
     }
 
@@ -283,7 +333,7 @@ export const addComment = async (req, res) => {
 
     const comment = {
       userId,
-      text,
+      text: trimmedText,
       createdAt: new Date(),
     };
 

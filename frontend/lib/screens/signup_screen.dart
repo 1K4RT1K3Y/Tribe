@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'home_screen.dart';
+import 'profile_setup_screen.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({Key? key}) : super(key: key);
+  const SignupScreen({super.key});
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -29,7 +29,12 @@ class _SignupScreenState extends State<SignupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(height: 60),
-              const Icon(Icons.favorite, size: 80, color: Colors.pink),
+              Image.asset(
+                'assets/images/tribe_logo.png',
+                width: 80,
+                height: 80,
+                fit: BoxFit.contain,
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Join Tribe',
@@ -135,7 +140,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         onPressed: _isLoading ? null : _handleSignup,
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 15),
-                          backgroundColor: Colors.pink,
+                          backgroundColor: Colors.blue,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -182,34 +187,32 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _handleSignup() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      setState(() => _isLoading = true);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-      final result = await context.read<AuthProvider>().register(
-            _nameController.text,
-            _emailController.text,
-            _passwordController.text,
-            _confirmPasswordController.text,
-          );
+    setState(() => _isLoading = true);
 
-      setState(() => _isLoading = false);
+    final result = await context.read<AuthProvider>().register(
+          _nameController.text,
+          _emailController.text,
+          _passwordController.text,
+          _confirmPasswordController.text,
+        );
 
-      if (result['success']) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
-        // Navigate to home screen
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const HomeScreen(),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'])),
-        );
-      }
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result['message'] ?? 'An error occurred')),
+    );
+
+    if (result['success']) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ProfileSetupScreen(),
+        ),
+      );
     }
   }
 

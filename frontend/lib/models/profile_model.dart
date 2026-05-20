@@ -8,6 +8,10 @@ class Profile {
   final String location;
   final String? profileImage;
   final bool verified;
+  final String occupation;
+  final String gender;
+  final String relationshipStatus;
+  final bool profileComplete;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +25,10 @@ class Profile {
     this.location = '',
     this.profileImage,
     this.verified = false,
+    this.occupation = '',
+    this.gender = 'Prefer not to say',
+    this.relationshipStatus = 'Prefer not to say',
+    this.profileComplete = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,6 +44,10 @@ class Profile {
       location: json['location'] ?? '',
       profileImage: json['profileImage'],
       verified: json['verified'] ?? false,
+      occupation: json['occupation'] ?? '',
+      gender: json['gender'] ?? 'Prefer not to say',
+      relationshipStatus: json['relationshipStatus'] ?? 'Prefer not to say',
+      profileComplete: json['profileComplete'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
@@ -52,6 +64,10 @@ class Profile {
       'location': location,
       'profileImage': profileImage,
       'verified': verified,
+      'occupation': occupation,
+      'gender': gender,
+      'relationshipStatus': relationshipStatus,
+      'profileComplete': profileComplete,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };

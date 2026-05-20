@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tribe/providers/auth_provider.dart';
 import 'package:tribe/screens/feed_screen.dart';
 import 'package:tribe/screens/match_suggestions_screen.dart';
 import 'package:tribe/screens/chat_list_screen.dart';
@@ -18,13 +16,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   List<Widget> get _screens {
-    final authProvider = Provider.of<AuthProvider>(context);
     return [
       const FeedScreen(),
       const MatchSuggestionsScreen(),
       const ChatListScreen(),
       const NotificationsScreen(),
-      ProfileViewScreen(userId: authProvider.user?.id ?? ''),
+      const ProfileViewScreen(),
     ];
   }
 

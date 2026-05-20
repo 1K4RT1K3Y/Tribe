@@ -254,7 +254,7 @@ class _MatchSuggestionsScreenState extends State<MatchSuggestionsScreen> {
           );
         }
 
-        return ListView.builder(
+          return ListView.builder(
           itemCount: _matches.length,
           itemBuilder: (context, index) {
             final match = _matches[index];

@@ -39,6 +39,24 @@ const profileSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  occupation: {
+    type: String,
+    default: '',
+  },
+  gender: {
+    type: String,
+    enum: ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say'],
+    default: 'Prefer not to say',
+  },
+  relationshipStatus: {
+    type: String,
+    enum: ['Single', 'In a relationship', 'Married', 'Prefer not to say'],
+    default: 'Prefer not to say',
+  },
+  profileComplete: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

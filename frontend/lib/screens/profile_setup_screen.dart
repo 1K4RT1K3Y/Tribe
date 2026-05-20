@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/profile_service.dart';
+import 'home_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
-  final String userId;
-
-  const ProfileSetupScreen({Key? key, required this.userId}) : super(key: key);
+  const ProfileSetupScreen({super.key});
 
   @override
   State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -15,9 +14,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _bioController = TextEditingController();
   final _ageController = TextEditingController();
   final _locationController = TextEditingController();
-  List<String> _interests = [];
-  List<String> _hobbies = [];
+  final _occupationController = TextEditingController();
+  final List<String> _interests = [];
+  final List<String> _hobbies = [];
+  String? _selectedGender;
+  String? _selectedRelationshipStatus;
   bool _isLoading = false;
+
+  final List<String> _genderOptions = ['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say'];
+  final List<String> _relationshipOptions = ['Single', 'In a relationship', 'Married', 'Prefer not to say'];
 
   final List<String> _suggestedInterests = [
     'Sports',
@@ -35,6 +40,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'Dancing',
     'Hiking',
     'Reading',
+    'Writing',
+    'Fashion',
+    'Meditation',
+    'Volunteering',
+    'Entrepreneurship',
   ];
 
   final List<String> _suggestedHobbies = [
@@ -52,6 +62,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     'Cycling',
     'Hiking',
     'Camping',
+    'Traveling',
+    'Reading',
+    'Blogging',
+    'Podcasting',
+    'Fitness',
+    'Coding',
   ];
 
   @override
@@ -60,6 +76,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       appBar: AppBar(
         title: const Text('Complete Your Profile'),
         elevation: 0,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -74,17 +91,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _bioController,
-                  maxLines: 4,
+                  maxLines: 3,
                   decoration: InputDecoration(
                     hintText: 'Tell us about yourself...',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                  validator: (value) {
-                    if (value?.isEmpty ?? true) {
-                      return 'Please enter a bio';
-                    }
-                    return null;
-                  },
                 ),
                 const SizedBox(height: 20),
 
@@ -99,10 +110,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                   validator: (value) {
-                    if (value?.isEmpty ?? true) return 'Please enter your age';
-                    final age = int.tryParse(value!);
-                    if (age == null || age < 13 || age > 120) {
-                      return 'Age must be between 13 and 120';
+                    if (value != null && value.isNotEmpty) {
+                      final age = int.tryParse(value);
+                      if (age == null || age < 13 || age > 120) {
+                        return 'Age must be between 13 and 120';
+                      }
                     }
                     return null;
                   },
@@ -122,8 +134,69 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
                 const SizedBox(height: 20),
 
+                // Occupation
+                const Text('Occupation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _occupationController,
+                  decoration: InputDecoration(
+                    hintText: 'e.g., Software Engineer, Teacher, etc.',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    prefixIcon: const Icon(Icons.work),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Gender
+                const Text('Gender', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedGender,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    prefixIcon: const Icon(Icons.person),
+                  ),
+                  hint: const Text('Select your gender'),
+                  items: _genderOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedGender = newValue;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Relationship Status
+                const Text('Relationship Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedRelationshipStatus,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    prefixIcon: const Icon(Icons.favorite),
+                  ),
+                  hint: const Text('Select your relationship status'),
+                  items: _relationshipOptions.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      _selectedRelationshipStatus = newValue;
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+
                 // Interests
-                const Text('Interests (Select up to 20)',
+                const Text('Interests (Select at least 4 for better matches)',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 10),
                 Wrap(
@@ -138,6 +211,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                 if (selected) {
                                   if (_interests.length < 20) {
                                     _interests.add(interest);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Maximum 20 interests allowed')),
+                                    );
                                   }
                                 } else {
                                   _interests.remove(interest);
@@ -150,7 +227,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 20),
 
                 // Hobbies
-                const Text('Hobbies (Select up to 20)',
+                const Text('Hobbies (Optional)',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 10),
                 Wrap(
@@ -176,24 +253,35 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
                 const SizedBox(height: 30),
 
+                // Buttons
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleProfileSetup,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      backgroundColor: Colors.pink,
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(color: Colors.white),
-                          )
-                        : const Text('Create Profile',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: _isLoading ? null : _handleProfileSetup,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          backgroundColor: Colors.blue,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(color: Colors.white),
+                              )
+                            : const Text('Save Profile',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 15),
+                      TextButton(
+                        onPressed: _isLoading ? null : _handleSkipForNow,
+                        child: const Text('Skip for now', style: TextStyle(color: Colors.grey)),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -203,22 +291,25 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _handleProfileSetup() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      if (_interests.isEmpty || _hobbies.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select at least one interest and hobby')),
-        );
-        return;
-      }
+    if (_interests.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one interest')),
+      );
+      return;
+    }
 
-      setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
-      final result = await ProfileService.createProfile(
-        bio: _bioController.text,
+    try {
+      final result = await ProfileService.updateProfile(
+        bio: _bioController.text.isEmpty ? null : _bioController.text,
         interests: _interests,
-        hobbies: _hobbies,
-        age: int.parse(_ageController.text),
-        location: _locationController.text,
+        hobbies: _hobbies.isEmpty ? null : _hobbies,
+        age: _ageController.text.isEmpty ? null : int.parse(_ageController.text),
+        location: _locationController.text.isEmpty ? null : _locationController.text,
+        occupation: _occupationController.text.isEmpty ? null : _occupationController.text,
+        gender: _selectedGender,
+        relationshipStatus: _selectedRelationshipStatus,
       );
 
       setState(() => _isLoading = false);
@@ -227,13 +318,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'])),
         );
-        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'])),
         );
       }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
+  }
+
+  void _handleSkipForNow() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
   }
 
   @override
@@ -241,6 +347,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _bioController.dispose();
     _ageController.dispose();
     _locationController.dispose();
+    _occupationController.dispose();
     super.dispose();
   }
 }

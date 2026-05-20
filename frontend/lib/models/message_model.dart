@@ -38,8 +38,8 @@ class Message {
       messageType: json['messageType'] as String? ?? 'text',
       isRead: json['isRead'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
-      sender: senderIdData is Map ? MessageUser.fromJson(senderIdData) : null,
-      receiver: receiverIdData is Map ? MessageUser.fromJson(receiverIdData) : null,
+      sender: senderIdData is Map ? MessageUser.fromJson(Map<String, dynamic>.from(senderIdData)) : null,
+      receiver: receiverIdData is Map ? MessageUser.fromJson(Map<String, dynamic>.from(receiverIdData)) : null,
     );
   }
 

@@ -1,11 +1,10 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/match_model.dart';
 import 'auth_service.dart';
 
 class MatchService {
-  static const String baseUrl = 'http://localhost:5000/api/matches';
+  static const String baseUrl = 'http://localhost:5000/api/matching';
 
   // Get suggested matches
   static Future<Map<String, dynamic>> getSuggestedUsers({
@@ -23,7 +22,7 @@ class MatchService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/suggestions?limit=$limit'),
+        Uri.parse('$baseUrl/suggestions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -32,13 +31,10 @@ class MatchService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final matches = (data['matches'] as List)
-            .map((m) => Match.fromJson(m))
-            .toList();
         return {
           'success': true,
-          'matches': matches,
-          'totalMatches': data['totalMatches'],
+          'matches': data['suggestedUsers'] ?? [],
+          'totalSuggestions': data['totalSuggestions'] ?? 0,
           'message': data['message'],
         };
       } else {
@@ -56,11 +52,8 @@ class MatchService {
     }
   }
 
-  // Get matches by interest
-  static Future<Map<String, dynamic>> getMatchesByInterest({
-    required String interest,
-    int limit = 10,
-  }) async {
+  // Search Users
+  static Future<Map<String, dynamic>> searchUsers(String query) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString(AuthService.tokenKey);
@@ -73,7 +66,7 @@ class MatchService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/by-interest?interest=$interest&limit=$limit'),
+        Uri.parse('$baseUrl/search?query=$query'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -82,18 +75,17 @@ class MatchService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final matches = (data['matches'] as List)
-            .map((m) => Match.fromJson(m))
-            .toList();
         return {
           'success': true,
-          'matches': matches,
-          'totalMatches': data['totalMatches'],
+          'results': data['results'] ?? [],
+          'totalResults': data['totalResults'] ?? 0,
+          'message': data['message'],
         };
       } else {
+        final data = jsonDecode(response.body);
         return {
           'success': false,
-          'message': 'Failed to fetch matches',
+          'message': data['message'] ?? 'Failed to search users',
         };
       }
     } catch (e) {
@@ -104,26 +96,13 @@ class MatchService {
     }
   }
 
-  // Get compatibility score
-  static Future<Map<String, dynamic>> getCompatibilityScore(
-    String targetUserId,
-  ) async {
+  // Get User Profile Details
+  static Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString(AuthService.tokenKey);
-
-      if (token == null) {
-        return {
-          'success': false,
-          'message': 'No authentication token found',
-        };
-      }
-
       final response = await http.get(
-        Uri.parse('$baseUrl/compatibility/$targetUserId'),
+        Uri.parse('$baseUrl/$userId'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
         },
       );
 
@@ -131,14 +110,12 @@ class MatchService {
         final data = jsonDecode(response.body);
         return {
           'success': true,
-          'score': data['score'],
-          'commonInterests': data['commonInterests'],
-          'commonHobbies': data['commonHobbies'],
+          'profile': data['profile'],
         };
       } else {
         return {
           'success': false,
-          'message': 'Failed to calculate compatibility',
+          'message': 'User profile not found',
         };
       }
     } catch (e) {

@@ -1,0 +1,127 @@
+name: Build Flutter APK & Web
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.41.4'
+        channel: 'stable'
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: |
+        flutter pub get
+        flutter doctor
+    
+    - name: Build APK Release
+      working-directory: ./frontend
+      run: |
+        flutter build apk --release
+    
+    - name: Build App Bundle (AAB)
+      working-directory: ./frontend
+      run: |
+        flutter build appbundle --release
+    
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-release-apk
+        path: frontend/build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30
+    
+    - name: Upload AAB Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-release-aab
+        path: frontend/build/app/outputs/bundle/release/app-release.aab
+        retention-days: 30
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          APK Build Artifacts:
+          - app-release.apk (Direct installation)
+          - app-release.aab (Google Play Store)
+        draft: false
+        prerelease: false
+
+  build-web:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.41.4'
+        channel: 'stable'
+    
+    - name: Install web dependencies
+      working-directory: ./frontend
+      run: flutter pub get
+    
+    - name: Build Web Release
+      working-directory: ./frontend
+      run: |
+        flutter build web --release --no-shrink
+    
+    - name: Upload Web Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: web-build
+        path: frontend/build/web/
+        retention-days: 7
+
+  backend-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: npm install
+    
+    - name: Run security audit
+      working-directory: ./backend
+      run: npm audit --audit-level=moderate || true
+    
+    - name: Lint check
+      working-directory: ./backend
+      run: npm run lint || true
+    
+    - name: Upload Backend Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: backend-ready
+        path: backend/
+        retention-days: 7

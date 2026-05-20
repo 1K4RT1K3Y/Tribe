@@ -22,7 +22,7 @@ export const createNotification = async (userId, type, title, message, relatedId
 // Get all notifications for current user
 export const getNotifications = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
     const { page = 1, limit = 20, type, isRead } = req.query;
     const skip = (page - 1) * limit;
 
@@ -64,7 +64,7 @@ export const getNotifications = async (req, res) => {
 // Get unread notifications count
 export const getUnreadNotificationsCount = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const unreadCount = await Notification.countDocuments({
       userId: currentUserId,
@@ -90,7 +90,7 @@ export const getUnreadNotificationsCount = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const notification = await Notification.findById(notificationId);
 
@@ -130,7 +130,7 @@ export const markAsRead = async (req, res) => {
 // Mark all notifications as read
 export const markAllAsRead = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const result = await Notification.updateMany(
       { userId: currentUserId, isRead: false },
@@ -158,7 +158,7 @@ export const markAllAsRead = async (req, res) => {
 export const deleteNotification = async (req, res) => {
   try {
     const { notificationId } = req.params;
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const notification = await Notification.findById(notificationId);
 
@@ -196,7 +196,7 @@ export const deleteNotification = async (req, res) => {
 // Delete all notifications
 export const deleteAllNotifications = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const result = await Notification.deleteMany({ userId: currentUserId });
 

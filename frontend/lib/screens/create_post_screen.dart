@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/post_service.dart';
 
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({Key? key}) : super(key: key);
+  const CreatePostScreen({super.key});
 
   @override
   State<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -24,7 +24,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             child: Text(
               'Post',
               style: TextStyle(
-                color: _isLoading ? Colors.grey : Colors.pink,
+                color: _isLoading ? Colors.grey : Colors.blue,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -79,15 +79,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 children: [
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.image, color: Colors.pink),
+                    icon: const Icon(Icons.image, color: Colors.blue),
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.emoji_emotions, color: Colors.pink),
+                    icon: const Icon(Icons.emoji_emotions, color: Colors.blue),
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.location_on, color: Colors.pink),
+                    icon: const Icon(Icons.location_on, color: Colors.blue),
                   ),
                 ],
               ),

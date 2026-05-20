@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/profile_service.dart';
 import '../models/profile_model.dart';
+import '../providers/auth_provider.dart';
+import 'login_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileViewScreen extends StatefulWidget {
-  final String userId;
-
-  const ProfileViewScreen({Key? key, required this.userId}) : super(key: key);
+  const ProfileViewScreen({super.key});
 
   @override
   State<ProfileViewScreen> createState() => _ProfileViewScreenState();
@@ -17,7 +19,35 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   @override
   void initState() {
     super.initState();
-    _profileFuture = ProfileService.getUserProfile(widget.userId);
+    _profileFuture = ProfileService.getMyProfile();
+  }
+
+  void _handleLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<AuthProvider>().logout();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -26,6 +56,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       appBar: AppBar(
         title: const Text('Profile'),
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: _handleLogout,
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _profileFuture,
@@ -36,11 +73,32 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
           if (!snapshot.hasData || !snapshot.data!['success']) {
             return Center(
-              child: Text(snapshot.data?['message'] ?? 'Failed to load profile'),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    snapshot.data?['message'] ?? 'Failed to load profile',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _profileFuture = ProfileService.getMyProfile();
+                      });
+                    },
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
             );
           }
 
           final Profile profile = snapshot.data!['profile'];
+          final bool isProfileEmpty = profile.bio.isEmpty && 
+                                      profile.interests.isEmpty && 
+                                      profile.hobbies.isEmpty &&
+                                      profile.age == null;
 
           return SingleChildScrollView(
             child: Column(
@@ -60,6 +118,61 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Empty Profile Message
+                      if (isProfileEmpty)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.blue[50],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.blue[200]!),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Complete Your Profile',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Add your bio, interests, and hobbies to help others get to know you better!',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const EditProfileScreen(),
+                                          ),
+                                        ).then((_) {
+                                          setState(() {
+                                            _profileFuture = ProfileService.getMyProfile();
+                                          });
+                                        });
+                                      },
+                                      child: const Text('Edit Profile'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+
                       // Name and Verification
                       Row(
                         children: [

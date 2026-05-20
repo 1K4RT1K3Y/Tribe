@@ -6,13 +6,48 @@ import { createNotification } from './notificationController.js';
 export const sendMessage = async (req, res) => {
   try {
     const { receiverId, content, messageType = 'text' } = req.body;
-    const senderId = req.user.id;
+    const senderId = req.userId;
 
     // Validate input
     if (!receiverId || !content) {
       return res.status(400).json({
         success: false,
         message: 'Receiver ID and message content are required',
+      });
+    }
+
+    // Validate content type
+    if (typeof content !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Message content must be a string',
+      });
+    }
+
+    const trimmedContent = content.trim();
+
+    // Validate content is not empty
+    if (trimmedContent.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message content cannot be empty',
+      });
+    }
+
+    // Validate content length
+    if (trimmedContent.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message cannot exceed 1000 characters',
+      });
+    }
+
+    // Validate message type
+    const validMessageTypes = ['text', 'image', 'system'];
+    if (!validMessageTypes.includes(messageType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid message type',
       });
     }
 
@@ -37,7 +72,7 @@ export const sendMessage = async (req, res) => {
     const message = new Message({
       senderId,
       receiverId,
-      content,
+      content: trimmedContent,
       messageType,
     });
 
@@ -76,7 +111,7 @@ export const sendMessage = async (req, res) => {
 export const getChatHistory = async (req, res) => {
   try {
     const { userId: otherUserId } = req.params;
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
     const { page = 1, limit = 50 } = req.query;
     const skip = (page - 1) * limit;
 
@@ -150,7 +185,7 @@ export const getChatHistory = async (req, res) => {
 // Get user's chat list (recent conversations)
 export const getChatList = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     // Get the most recent message for each conversation
     const conversations = await Message.aggregate([
@@ -241,7 +276,7 @@ export const getChatList = async (req, res) => {
 // Get unread messages count
 export const getUnreadCount = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const unreadCount = await Message.countDocuments({
       receiverId: currentUserId,
@@ -267,7 +302,7 @@ export const getUnreadCount = async (req, res) => {
 export const markMessagesAsRead = async (req, res) => {
   try {
     const { userId } = req.params;
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const result = await Message.updateMany(
       {
@@ -299,7 +334,7 @@ export const markMessagesAsRead = async (req, res) => {
 export const deleteMessage = async (req, res) => {
   try {
     const { messageId } = req.params;
-    const currentUserId = req.user.id;
+    const currentUserId = req.userId;
 
     const message = await Message.findById(messageId);
 

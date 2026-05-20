@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Profile from '../models/Profile.js';
 import generateToken from '../utils/tokenGenerator.js';
 
 // Register User
@@ -6,7 +7,7 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, confirmPassword } = req.body;
 
-    // Validation
+    // Validation - check required fields
     if (!name || !email || !password || !confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -14,6 +15,35 @@ export const register = async (req, res) => {
       });
     }
 
+    // Trim inputs
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    // Name validation
+    if (trimmedName.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name must be at least 2 characters',
+      });
+    }
+
+    if (trimmedName.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name cannot exceed 50 characters',
+      });
+    }
+
+    // Email validation
+    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address',
+      });
+    }
+
+    // Password validation
     if (password !== confirmPassword) {
       return res.status(400).json({
         success: false,
@@ -21,15 +51,38 @@ export const register = async (req, res) => {
       });
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters',
+        message: 'Password must be at least 8 characters',
+      });
+    }
+
+    if (password.length > 128) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password is too long (max 128 characters)',
+      });
+    }
+
+    // Password strength validation - must have at least one number
+    if (!/\d/.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain at least one number',
+      });
+    }
+
+    // Password strength validation - must have at least one uppercase letter
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain at least one uppercase letter',
       });
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: trimmedEmail });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -39,12 +92,27 @@ export const register = async (req, res) => {
 
     // Create new user
     const user = new User({
-      name,
-      email,
+      name: trimmedName,
+      email: trimmedEmail,
       password,
     });
 
     await user.save();
+
+    // Create empty profile for new user
+    const profile = new Profile({
+      userId: user._id,
+      bio: '',
+      interests: [],
+      hobbies: [],
+      age: null,
+      location: '',
+      profileImage: null,
+      verified: false,
+      profileComplete: false,
+    });
+
+    await profile.save();
 
     // Generate token
     const token = generateToken(user._id);

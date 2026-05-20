@@ -3,6 +3,7 @@ import {
   getSuggestedUsers,
   getUserProfileDetails,
   getAllUsersWithMatchScores,
+  searchUsers,
 } from '../controllers/matchingController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 
@@ -10,6 +11,7 @@ const router = express.Router();
 
 // Protected routes
 router.get('/suggestions', authMiddleware, getSuggestedUsers);
+router.get('/search', authMiddleware, searchUsers);
 router.get('/debug/all-scores', authMiddleware, getAllUsersWithMatchScores);
 
 // Public route (can view any user's profile)

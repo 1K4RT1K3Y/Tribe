@@ -85,7 +85,7 @@ class _FeedScreenState extends State<FeedScreen> {
             MaterialPageRoute(builder: (context) => const CreatePostScreen()),
           ).then((_) => _refresh());
         },
-        backgroundColor: Colors.pink,
+        backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
       ),
     );
@@ -103,10 +103,10 @@ class PostCard extends StatefulWidget {
   final VoidCallback onPostUpdated;
 
   const PostCard({
-    Key? key,
+    super.key,
     required this.post,
     required this.onPostUpdated,
-  }) : super(key: key);
+  });
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -207,7 +207,7 @@ class _PostCardState extends State<PostCard> {
                   onPressed: _isLiking ? null : _toggleLike,
                   icon: Icon(
                     Icons.favorite,
-                    color: _post.likes.contains('currentUserId') ? Colors.red : Colors.grey,
+                    color: _post.likes.contains('currentUserId') ? Colors.blue : Colors.grey,
                   ),
                   label: const Text('Like'),
                 ),
